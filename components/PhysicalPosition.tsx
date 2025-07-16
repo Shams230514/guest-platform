@@ -8,16 +8,16 @@ interface PhysicalPositionProps {
 }
 
 const PhysicalPosition = ({ language = "en" }: PhysicalPositionProps) => {
-  const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const isIntersecting = useIntersectionObserver(sectionRef, { threshold: 0.3 });
+
+  const [, /*hoveredCountry*/ setHoveredCountry] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<{
     visible: boolean;
     content: string;
     x: number;
     y: number;
   }>({ visible: false, content: "", x: 0, y: 0 });
-
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const isIntersecting = useIntersectionObserver(sectionRef, { threshold: 0.3 });
 
   const translations = {
     en: {
@@ -70,15 +70,14 @@ const PhysicalPosition = ({ language = "en" }: PhysicalPositionProps) => {
 
   const t = translations[language];
 
-  const countries = [
+  const datacenters = [
     {
       id: "senegal",
       name: "Sénégal",
       city: "Dakar",
       latency: "< 15ms",
       population: "16M",
-      x: 225,
-      y: 287
+      coordinates: [200, 180] // Position sur la carte
     },
     {
       id: "cote-divoire",
@@ -86,8 +85,7 @@ const PhysicalPosition = ({ language = "en" }: PhysicalPositionProps) => {
       city: "Abidjan",
       latency: "< 20ms",
       population: "26M",
-      x: 305,
-      y: 357
+      coordinates: [280, 280]
     },
     {
       id: "cameroon",
@@ -95,8 +93,7 @@ const PhysicalPosition = ({ language = "en" }: PhysicalPositionProps) => {
       city: "Douala",
       latency: "< 18ms",
       population: "27M",
-      x: 445,
-      y: 387
+      coordinates: [420, 320]
     },
     {
       id: "congo",
@@ -104,18 +101,17 @@ const PhysicalPosition = ({ language = "en" }: PhysicalPositionProps) => {
       city: "Brazzaville",
       latency: "< 25ms",
       population: "5.5M",
-      x: 465,
-      y: 427
+      coordinates: [440, 380]
     }
   ];
 
-  type Country = (typeof countries)[0];
+  type Country = (typeof datacenters)[0];
 
   const handleCountryHover = (country: Country, event: React.MouseEvent) => {
     setHoveredCountry(country.id);
     setTooltip({
       visible: true,
-      content: `${country.city}, ${country.name}<br/>Latence: ${country.latency}<br/>Population: ${country.population}`,
+      content: `🏢 <strong>${country.city}, ${country.name}</strong><br/>⚡ Latence: ${country.latency}<br/>👥 Population: ${country.population}<br/>✅ Datacenter Heritage actif`,
       x: event.clientX + 10,
       y: event.clientY - 10
     });
@@ -129,109 +125,135 @@ const PhysicalPosition = ({ language = "en" }: PhysicalPositionProps) => {
   return (
     <section
       ref={sectionRef}
-      className="w-full py-20 bg-black text-white relative overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-green-500/20" />
-      </div>
-
+      className="w-full py-20 bg-black text-white relative overflow-hidden"
+      style={{
+        backgroundImage: "url(/abstract-bg.svg)",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat"
+      }}>
       <div className="container mx-auto px-4 relative z-10">
         {/* Header */}
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white via-blue-400 to-green-400 bg-clip-text text-transparent">
-            {t.title}
-          </h2>
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">{t.title}</h2>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
             {t.subtitle}
           </p>
         </div>
 
-        {/* Main Content */}
-        <div className="grid lg:grid-cols-2 gap-16 items-center mb-20">
-          {/* Interactive Map */}
-          <div className="relative">
-            <div className="bg-gradient-to-br from-blue-500/10 to-green-500/10 rounded-3xl p-8 border border-white/10 backdrop-blur-sm">
-              <svg viewBox="0 0 800 800" className="w-full h-auto max-w-md mx-auto">
-                {/* Africa continent outline */}
-                <path
-                  d="M400 100 L450 120 L500 140 L550 160 L580 200 L600 250 L620 300 L640 350 L650 400 L640 450 L620 500 L580 550 L540 580 L480 600 L420 610 L360 600 L300 580 L260 550 L220 500 L200 450 L190 400 L200 350 L220 300 L240 250 L260 200 L290 160 L340 120 Z"
-                  fill="none"
-                  stroke="rgba(255,255,255,0.3)"
-                  strokeWidth="2"
-                />
-
-                {/* Country regions */}
-                {countries.map((country) => (
-                  <g key={country.id}>
-                    <circle
-                      cx={country.x}
-                      cy={country.y}
-                      r="20"
-                      fill={hoveredCountry === country.id ? "#10b981" : "#0ea5e9"}
-                      stroke="#fff"
-                      strokeWidth="2"
-                      className="cursor-pointer transition-all duration-300 hover:r-6"
-                      onMouseEnter={(e) => handleCountryHover(country, e)}
-                      onMouseLeave={handleMouseLeave}
-                    />
-                    <text
-                      x={country.x}
-                      y={country.y + 35}
-                      textAnchor="middle"
-                      fill="white"
-                      fontSize="12"
-                      className="font-medium">
-                      {country.city}
-                    </text>
-                  </g>
-                ))}
-
-                {/* Connection lines */}
-                <g stroke="rgba(16,185,129,0.3)" strokeWidth="2">
-                  <line x1="225" y1="287" x2="305" y2="357" />
-                  <line x1="305" y1="357" x2="445" y2="387" />
-                  <line x1="445" y1="387" x2="465" y2="427" />
-                  <line x1="225" y1="287" x2="445" y2="387" />
-                </g>
-              </svg>
+        {/* Stats Grid EN HAUT avec glass effect */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-20">
+          {[
+            { number: "4", label: t.datacenters },
+            { number: "74M+", label: t.populationCovered },
+            { number: "< 20ms", label: t.averageLatency },
+            { number: "99.9%", label: t.uptimeSLA }
+          ].map((stat, index) => (
+            <div
+              key={index}
+              className="flex flex-col h-full relative z-10 bg-transparent border-none rounded-md overflow-hidden shadow-lg">
+              <div className="absolute inset-0 glass-bg -z-10"></div>
+              <div className="p-6 text-center">
+                <div className="text-3xl font-bold text-primary mb-2">
+                  {isIntersecting ? stat.number : "0"}
+                </div>
+                <div className="text-sm text-gray-400 uppercase tracking-wide">
+                  {stat.label}
+                </div>
+              </div>
             </div>
-          </div>
+          ))}
+        </div>
 
-          {/* Info Panel */}
+        {/* Main Content - Carte et Avantages AU MÊME NIVEAU */}
+        <div className="grid lg:grid-cols-2 gap-16 items-start mb-8">
+          {/* Colonne GAUCHE : Carte Google Maps Embed */}
           <div className="space-y-8">
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-6">
+            {/* Carte Google Maps simple et efficace */}
+            <div className="relative z-10 bg-transparent border-none rounded-lg overflow-hidden shadow-lg">
+              <div className="absolute inset-0 glass-bg -z-10"></div>
+              <div className="p-8">
+                <div className="relative w-full h-96 rounded-lg overflow-hidden bg-gray-900">
+                  {/* Google Maps avec coordonnées centrées sur l'Afrique de l'Ouest */}
+                  <iframe
+                    src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d15076906.488876823!2d3.2901!3d7.9527!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sfr!2sfr!4v1709123456789!5m2!1sfr!2sfr"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0, borderRadius: "8px" }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Carte des datacenters Heritage en Afrique"
+                  />
+
+                  {/* Overlay avec markers Heritage */}
+                  <div className="absolute inset-0 pointer-events-none">
+                    {datacenters.map((datacenter, index) => (
+                      <div
+                        key={datacenter.id}
+                        className="absolute pointer-events-auto"
+                        style={{
+                          top: `${25 + index * 15}%`,
+                          left: `${30 + index * 8}%`
+                        }}>
+                        <div
+                          className="w-10 h-10 bg-primary border-3 border-white rounded-full flex items-center justify-center text-white font-bold shadow-lg cursor-pointer transform hover:scale-110 transition-transform duration-200"
+                          onMouseEnter={(e) => handleCountryHover(datacenter, e)}
+                          onMouseLeave={handleMouseLeave}>
+                          🏢
+                        </div>
+                        <div className="text-white text-xs mt-1 text-center font-semibold bg-black/70 px-2 py-1 rounded">
+                          {datacenter.city}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-6 text-center text-sm text-gray-400">
+                  {/*🌍 Carte interactive - Survolez les markers Heritage pour plus d'infos*/}
+                </div>
+              </div>
+            </div>
+
+            {/* Badges repositionnés EN BAS de la carte */}
+            <div className="flex flex-wrap justify-center gap-6">
               {[
-                { number: "4", label: t.datacenters },
-                { number: "74M+", label: t.populationCovered },
-                { number: "< 20ms", label: t.averageLatency },
-                { number: "99.9%", label: t.uptimeSLA }
-              ].map((stat, index) => (
+                { icon: "🌍", title: t.africanOwned, desc: t.africanOwnedDesc },
+                {
+                  icon: "🛡️",
+                  title: t.dataSovereigntyBadge,
+                  desc: t.dataSovereigntyBadgeDesc
+                }
+              ].map((badge, index) => (
                 <div
                   key={index}
-                  className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 text-center hover:bg-white/10 transition-all duration-300 hover:-translate-y-1">
-                  <div className="text-3xl font-bold text-green-400 mb-2">
-                    {isIntersecting ? stat.number : "0"}
-                  </div>
-                  <div className="text-sm text-gray-400 uppercase tracking-wide">
-                    {stat.label}
+                  className="flex flex-col h-full relative z-10 bg-transparent border-none rounded-md overflow-hidden shadow-lg">
+                  <div className="absolute inset-0 glass-bg -z-10"></div>
+                  <div className="p-6 text-center min-w-[160px] hover:-translate-y-2 transition-all duration-300">
+                    <div className="text-3xl mb-3">{badge.icon}</div>
+                    <div className="font-semibold mb-2 text-white">{badge.title}</div>
+                    <div className="text-sm text-gray-400">{badge.desc}</div>
                   </div>
                 </div>
               ))}
             </div>
+          </div>
 
-            {/* Advantages List */}
-            <div className="space-y-6">
-              {[
-                { icon: "🛡️", title: t.dataSovereignty, desc: t.dataSovereigntyDesc },
-                { icon: "⚡", title: t.ultraLowLatency, desc: t.ultraLowLatencyDesc },
-                { icon: "🔒", title: t.localGovernance, desc: t.localGovernanceDesc },
-                { icon: "💰", title: t.costEfficient, desc: t.costEfficientDesc }
-              ].map((advantage, index) => (
-                <div
-                  key={index}
-                  className="flex items-start gap-4 p-4 rounded-xl hover:bg-white/5 transition-all duration-300">
-                  <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center text-xl flex-shrink-0">
+          {/* Colonne DROITE : Avantages */}
+          <div className="space-y-6">
+            {[
+              { icon: "🛡️", title: t.dataSovereignty, desc: t.dataSovereigntyDesc },
+              { icon: "⚡", title: t.ultraLowLatency, desc: t.ultraLowLatencyDesc },
+              { icon: "🔒", title: t.localGovernance, desc: t.localGovernanceDesc },
+              { icon: "💰", title: t.costEfficient, desc: t.costEfficientDesc }
+            ].map((advantage, index) => (
+              <div
+                key={index}
+                className="flex flex-col h-full relative z-10 bg-transparent border-none rounded-md overflow-hidden shadow-lg">
+                <div className="absolute inset-0 glass-bg -z-10"></div>
+                <div className="flex items-start gap-4 p-6 hover:bg-white/5 transition-all duration-300">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center text-xl flex-shrink-0 text-primary">
                     {advantage.icon}
                   </div>
                   <div>
@@ -241,36 +263,16 @@ const PhysicalPosition = ({ language = "en" }: PhysicalPositionProps) => {
                     </p>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
-        </div>
-
-        {/* Certification Badges - Simplifié */}
-        <div className="flex flex-wrap justify-center gap-8">
-          {[
-            { icon: "🌍", title: t.africanOwned, desc: t.africanOwnedDesc },
-            {
-              icon: "🛡️",
-              title: t.dataSovereigntyBadge,
-              desc: t.dataSovereigntyBadgeDesc
-            }
-          ].map((badge, index) => (
-            <div
-              key={index}
-              className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center min-w-[160px] hover:bg-white/10 hover:-translate-y-2 transition-all duration-300">
-              <div className="text-3xl mb-3">{badge.icon}</div>
-              <div className="font-semibold mb-2">{badge.title}</div>
-              <div className="text-sm text-gray-400">{badge.desc}</div>
-            </div>
-          ))}
         </div>
       </div>
 
       {/* Tooltip */}
       {tooltip.visible && (
         <div
-          className="fixed bg-black/90 text-white px-4 py-2 rounded-lg border border-white/20 text-sm z-50 pointer-events-none"
+          className="fixed bg-black/95 text-white px-4 py-3 rounded-lg border border-primary/30 text-sm z-50 pointer-events-none shadow-xl"
           style={{ left: tooltip.x, top: tooltip.y }}
           dangerouslySetInnerHTML={{ __html: tooltip.content }}
         />
